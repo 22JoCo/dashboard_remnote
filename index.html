@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Co · Daily Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #ffffff;
+    --surface: #f7f7f9;
+    --surface2: #efeff3;
+    --border: #e0e0ea;
+    --border2: #c8c8d8;
+    --text: #1a1a2a;
+    --text2: #555570;
+    --text3: #9999b0;
+    --gold: #a07820;
+    --gold-dim: #e8d49a;
+    --purple: #5548b0;
+    --purple-dim: #d8d4f5;
+    --teal: #1a8a6e;
+    --teal-dim: #c0ece0;
+    --red: #b83030;
+    --red-dim: #fad8d8;
+    --accent: #c9a84c;
+    --font-mono: 'DM Mono', monospace;
+    --font-sans: 'DM Sans', sans-serif;
+    --radius: 8px;
+    --radius-lg: 12px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 24px;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  /* ── Header ── */
+  .header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .header-left { display: flex; align-items: baseline; gap: 12px; }
+  .header-name {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--gold);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .header-date {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text3);
+    letter-spacing: 0.04em;
+  }
+  .header-time {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--text2);
+  }
+
+  /* ── Metrics row ── */
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .metric {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 14px 16px;
+  }
+  .metric-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 6px;
+  }
+  .metric-value {
+    font-size: 26px;
+    font-weight: 300;
+    color: var(--text);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .metric-value.urgent { color: var(--red); }
+  .metric-value.ok { color: var(--teal); }
+  .metric-sub {
+    font-size: 11px;
+    color: var(--text3);
+    font-family: var(--font-mono);
+  }
+  .progress-bar {
+    margin-top: 8px;
+    height: 2px;
+    background: var(--border);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    border-radius: 999px;
+    transition: width 0.4s ease;
+  }
+
+  /* ── Week strip ── */
+  .week {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 6px;
+    margin-bottom: 20px;
+  }
+  .day-cell {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 8px 4px;
+    text-align: center;
+    position: relative;
+  }
+  .day-cell.today {
+    border-color: var(--gold);
+    background: var(--surface2);
+  }
+  .day-cell.weekend { opacity: 0.45; }
+  .day-label {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 4px;
+  }
+  .day-cell.today .day-label { color: var(--gold); }
+  .day-num {
+    font-size: 15px;
+    font-weight: 300;
+    color: var(--text2);
+  }
+  .day-cell.today .day-num { color: var(--gold); font-weight: 500; }
+  .day-dot {
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    margin: 5px auto 0;
+    background: transparent;
+  }
+  .day-cell.has-tasks .day-dot { background: var(--text3); }
+  .day-cell.today .day-dot { background: var(--gold); }
+
+  /* ── Day bar ── */
+  .day-bar-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+    padding: 10px 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+  .day-bar-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text3);
+    white-space: nowrap;
+    min-width: 52px;
+  }
+  .day-bar-inner {
+    flex: 1;
+    height: 3px;
+    background: var(--border);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+  .day-bar-fill {
+    height: 100%;
+    background: var(--gold);
+    border-radius: 999px;
+    transition: width 0.4s ease;
+  }
+  .day-bar-right {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text2);
+    white-space: nowrap;
+    min-width: 80px;
+    text-align: right;
+  }
+
+  /* ── Section ── */
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .section-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+  .section-count {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text3);
+  }
+
+  /* ── Tasks ── */
+  .task-list { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
+
+  .task {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 12px;
+    cursor: pointer;
+    transition: border-color 0.12s, opacity 0.15s;
+    user-select: none;
+  }
+  .task:hover { border-color: var(--border2); }
+  .task.done { opacity: 0.35; }
+  .task.done .task-name { text-decoration: line-through; }
+  .task.urgent { border-left: 2px solid var(--red); border-radius: 0 var(--radius) var(--radius) 0; }
+
+  .check {
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    border: 1px solid var(--border2);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+  }
+  .task.done .check {
+    background: var(--teal-dim);
+    border-color: var(--teal);
+  }
+  .check-mark {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: transparent;
+  }
+  .task.done .check-mark { background: var(--teal); }
+
+  .task-name {
+    flex: 1;
+    font-size: 13px;
+    color: var(--text);
+    font-weight: 300;
+  }
+  .task-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+  .task-time {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text3);
+  }
+
+  .cat-tag {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    padding: 2px 7px;
+    border-radius: 999px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .cat-thesis  { background: var(--gold-dim); color: var(--gold); border: 1px solid #d4b87a; }
+  .cat-bw      { background: var(--purple-dim); color: var(--purple); border: 1px solid #b0a8e0; }
+  .cat-privat  { background: var(--teal-dim); color: var(--teal); border: 1px solid #8ad4c0; }
+
+  /* ── Delete button ── */
+  .task-del {
+    opacity: 0;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text3);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0 2px;
+    line-height: 1;
+    transition: opacity 0.1s, color 0.1s;
+  }
+  .task:hover .task-del { opacity: 1; }
+  .task-del:hover { color: var(--red); }
+
+  /* ── Add form ── */
+  .add-btn {
+    width: 100%;
+    padding: 8px;
+    background: transparent;
+    border: 1px dashed var(--border2);
+    border-radius: var(--radius);
+    color: var(--text3);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    cursor: pointer;
+    letter-spacing: 0.04em;
+    transition: border-color 0.12s, color 0.12s;
+  }
+  .add-btn:hover { border-color: var(--gold-dim); color: var(--gold); }
+
+  .add-form {
+    display: none;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 8px;
+    padding: 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+  .add-form.open { display: flex; }
+  .form-row { display: flex; gap: 8px; }
+
+  input, select {
+    font-family: var(--font-sans);
+    font-size: 12px;
+    background: var(--bg);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    color: var(--text);
+    padding: 7px 10px;
+    outline: none;
+    transition: border-color 0.12s;
+  }
+  input:focus, select:focus { border-color: var(--gold); }
+  input::placeholder { color: var(--text3); }
+  input[type="text"] { flex: 1; }
+  input.time-field { width: 80px; flex-shrink: 0; }
+  select { flex-shrink: 0; background: var(--bg); cursor: pointer; }
+
+  .check-row { display: flex; align-items: center; gap: 8px; }
+  .check-row label { font-size: 11px; color: var(--text2); cursor: pointer; display: flex; align-items: center; gap: 6px; }
+  input[type="checkbox"] { width: 14px; height: 14px; cursor: pointer; accent-color: var(--red); }
+
+  .form-actions { display: flex; gap: 6px; justify-content: flex-end; }
+  .btn-save {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    padding: 6px 14px;
+    background: var(--gold-dim);
+    border: 1px solid var(--gold);
+    border-radius: var(--radius);
+    color: var(--gold);
+    cursor: pointer;
+    letter-spacing: 0.04em;
+    transition: background 0.12s;
+  }
+  .btn-save:hover { background: #d4b060; }
+  .btn-cancel {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    padding: 6px 14px;
+    background: transparent;
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    color: var(--text3);
+    cursor: pointer;
+  }
+
+  /* ── Deadline section ── */
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 20px 0;
+  }
+  .deadline-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .deadline-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    white-space: nowrap;
+  }
+  input[type="date"] { font-family: var(--font-mono); font-size: 11px; }
+  .btn-set {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    padding: 5px 12px;
+    background: transparent;
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    color: var(--text2);
+    cursor: pointer;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+    transition: border-color 0.12s, color 0.12s;
+  }
+  .btn-set:hover { border-color: var(--gold-dim); color: var(--gold); }
+
+  /* ── How-to embed note ── */
+  .embed-note {
+    margin-top: 28px;
+    padding: 14px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 2px solid var(--gold-dim);
+    border-radius: 0 var(--radius) var(--radius) 0;
+  }
+  .embed-note-title {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--gold);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 8px;
+  }
+  .embed-note ol {
+    padding-left: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .embed-note li {
+    font-size: 12px;
+    color: var(--text2);
+    line-height: 1.6;
+  }
+  .embed-note code {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    background: var(--bg);
+    color: var(--gold);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+  .embed-note .hint {
+    margin-top: 10px;
+    font-size: 11px;
+    color: var(--text3);
+    font-family: var(--font-mono);
+  }
+
+  @media (max-width: 520px) {
+    body { padding: 16px; }
+    .metrics { grid-template-columns: 1fr 1fr; }
+    .metrics .metric:last-child { grid-column: 1 / -1; }
+    .metric-value { font-size: 20px; }
+  }
+</style>
+
+<div class="header">
+  <div class="header-left">
+    <span class="header-name">Co · Daily Hub</span>
+    <span class="header-date" id="header-date"></span>
+  </div>
+  <span class="header-time" id="header-time"></span>
+</div>
+
+<div class="week" id="week"></div>
+
+<div class="metrics">
+  <div class="metric">
+    <div class="metric-label">Thesis-Abgabe</div>
+    <div class="metric-value" id="thesis-days">–</div>
+    <div class="metric-sub" id="thesis-sub">Datum setzen ↓</div>
+    <div class="progress-bar"><div class="progress-fill" id="thesis-bar" style="background:var(--red);width:0%"></div></div>
+  </div>
+  <div class="metric">
+    <div class="metric-label">Aufgaben heute</div>
+    <div class="metric-value" id="time-total">0h</div>
+    <div class="metric-sub" id="tasks-pending">0 offen</div>
+    <div class="progress-bar"><div class="progress-fill" id="tasks-bar" style="background:var(--teal);width:0%"></div></div>
+  </div>
+  <div class="metric">
+    <div class="metric-label">Fortschritt</div>
+    <div class="metric-value" id="done-val">0 / 0</div>
+    <div class="metric-sub" id="done-pct">–</div>
+    <div class="progress-bar"><div class="progress-fill" id="done-bar" style="background:var(--gold);width:0%"></div></div>
+  </div>
+</div>
+
+<div class="day-bar-wrap">
+  <span class="day-bar-label" id="now-label">–</span>
+  <div class="day-bar-inner"><div class="day-bar-fill" id="day-bar"></div></div>
+  <span class="day-bar-right" id="day-bar-right">–</span>
+</div>
+
+<div class="section-header">
+  <span class="section-label">Heute</span>
+  <span class="section-count" id="section-count"></span>
+</div>
+
+<div class="task-list" id="task-list"></div>
+
+<button class="add-btn" id="add-btn">+ aufgabe hinzufügen</button>
+
+<div class="add-form" id="add-form">
+  <div class="form-row">
+    <input type="text" id="new-name" placeholder="Aufgabe beschreiben…" />
+  </div>
+  <div class="form-row">
+    <input type="text" class="time-field" id="new-time" placeholder="Zeit (1h, 30min…)" />
+    <select id="new-cat">
+      <option value="thesis">Thesis</option>
+      <option value="bw">Bundeswehr</option>
+      <option value="privat">Privat</option>
+    </select>
+  </div>
+  <div class="check-row">
+    <label><input type="checkbox" id="new-urgent"> Dringend (rot)</label>
+  </div>
+  <div class="form-actions">
+    <button class="btn-cancel" id="cancel-btn">Abbrechen</button>
+    <button class="btn-save" id="save-btn">Speichern</button>
+  </div>
+</div>
+
+<hr class="divider">
+
+<div class="deadline-row">
+  <span class="deadline-label">Thesis-Abgabe:</span>
+  <input type="date" id="deadline-input" />
+  <button class="btn-set" id="deadline-btn">Setzen</button>
+  <span style="font-family:var(--font-mono);font-size:10px;color:var(--text3);" id="deadline-display"></span>
+</div>
+
+<div class="embed-note">
+  <div class="embed-note-title">In RemNote einbetten</div>
+  <ol>
+    <li>Diese HTML-Datei irgendwo ablegen, z.B. in <code>~/Documents/dashboard.html</code></li>
+    <li>In RemNote: neuer Block → <code>/</code> → <strong>Embed</strong> oder <strong>IFrame</strong> wählen</li>
+    <li>Alternativ: <code>/HTML Block</code> → gesamten Inhalt dieser Datei einfügen</li>
+    <li>Oder lokal öffnen: Datei im Browser aufrufen, als Lesezeichen anlegen</li>
+  </ol>
+  <div class="hint">Tipp: Aufgaben und Abgabedatum werden im Browser-LocalStorage gespeichert — bleiben also erhalten.</div>
+</div>
+
+<script>
+const LS_TASKS   = 'co_tasks_';
+const LS_DL      = 'co_deadline';
+const LS_START   = 'co_start';
+
+function todayKey() { return new Date().toISOString().slice(0,10); }
+
+function ls(key, val) {
+  if (val === undefined) { try { return JSON.parse(localStorage.getItem(key)); } catch { return null; } }
+  try { localStorage.setItem(key, JSON.stringify(val)); } catch {}
+}
+
+const DEFAULT_TASKS = [
+  { id: 1, name: 'MAXQDA Erstkodierung Interview 1', cat: 'thesis', time: '2h', urgent: true,  done: false },
+  { id: 2, name: 'Schwedisch SLP 1111 – Lerneinheit', cat: 'bw',     time: '1h', urgent: false, done: false },
+  { id: 3, name: 'Inbox leeren & Hub updaten',       cat: 'privat', time: '10min', urgent: false, done: false },
+];
+
+let tasks    = ls(LS_TASKS + todayKey()) || DEFAULT_TASKS;
+let deadline = ls(LS_DL) || null;
+let startD   = ls(LS_START) || null;
+
+function saveTasks() { ls(LS_TASKS + todayKey(), tasks); }
+
+function parseMins(s) {
+  if (!s) return 0;
+  s = s.toLowerCase().trim();
+  if (s.includes('h') && s.includes('min')) {
+    const m = s.match(/(\d+\.?\d*)h.*?(\d+)min/);
+    if (m) return Math.round(parseFloat(m[1]) * 60 + parseInt(m[2]));
+  }
+  if (s.includes('h')) return Math.round(parseFloat(s) * 60);
+  if (s.includes('min')) return parseInt(s);
+  return Math.round(parseFloat(s) * 60) || 0;
+}
+
+function fmtTime(mins) {
+  if (!mins) return '–';
+  if (mins < 60) return mins + 'min';
+  const h = Math.floor(mins / 60), m = mins % 60;
+  return m ? h + 'h ' + m + 'min' : h + 'h';
+}
+
+const DAYS = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+const MONTHS = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+
+function renderHeader() {
+  const now = new Date();
+  const d = now.getDate(), mo = MONTHS[now.getMonth()], y = now.getFullYear();
+  const dow = DAYS[now.getDay()];
+  document.getElementById('header-date').textContent = dow + ', ' + d + '. ' + mo + ' ' + y;
+  const h = String(now.getHours()).padStart(2,'0');
+  const m = String(now.getMinutes()).padStart(2,'0');
+  document.getElementById('header-time').textContent = h + ':' + m;
+}
+
+function renderWeek() {
+  const el = document.getElementById('week');
+  const now = new Date();
+  const dow = now.getDay();
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - ((dow + 6) % 7));
+  const labels = ['Mo','Di','Mi','Do','Fr','Sa','So'];
+  el.innerHTML = '';
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    const isToday = d.toDateString() === now.toDateString();
+    const isWeekend = i >= 5;
+    const div = document.createElement('div');
+    div.className = 'day-cell' + (isToday ? ' today' : '') + (isWeekend ? ' weekend' : '') + ' has-tasks';
+    div.innerHTML = `<div class="day-label">${labels[i]}</div><div class="day-num">${d.getDate()}</div><div class="day-dot"></div>`;
+    el.appendChild(div);
+  }
+}
+
+function renderDayBar() {
+  const now = new Date();
+  const h = now.getHours() + now.getMinutes() / 60;
+  const start = 8, end = 20;
+  const pct = Math.min(100, Math.max(0, Math.round((h - start) / (end - start) * 100)));
+  const remaining = Math.max(0, end - h);
+  const remH = Math.floor(remaining);
+  const remM = Math.round((remaining - remH) * 60);
+  document.getElementById('day-bar').style.width = pct + '%';
+  document.getElementById('now-label').textContent = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0') + ' Uhr';
+  document.getElementById('day-bar-right').textContent = (remH > 0 ? remH + 'h ' : '') + (remM > 0 ? remM + 'min ' : '') + 'verbleibend';
+}
+
+function renderMetrics() {
+  const pending = tasks.filter(t => !t.done);
+  const done    = tasks.filter(t => t.done);
+  const totalMins = pending.reduce((s, t) => s + parseMins(t.time), 0);
+  const pctDone = tasks.length ? Math.round(done.length / tasks.length * 100) : 0;
+
+  document.getElementById('time-total').textContent = fmtTime(totalMins);
+  document.getElementById('time-total').className = 'metric-value' + (totalMins > 240 ? ' urgent' : '');
+  document.getElementById('tasks-pending').textContent = pending.length + ' offen · ' + fmtTime(totalMins);
+  document.getElementById('tasks-bar').style.width = pctDone + '%';
+
+  document.getElementById('done-val').textContent = done.length + ' / ' + tasks.length;
+  document.getElementById('done-val').className = 'metric-value' + (pctDone === 100 ? ' ok' : '');
+  document.getElementById('done-pct').textContent = pctDone + '% erledigt';
+  document.getElementById('done-bar').style.width = pctDone + '%';
+  document.getElementById('section-count').textContent = pending.length + ' offen, ' + done.length + ' done';
+
+  if (deadline) {
+    const dl = new Date(deadline + 'T23:59:00');
+    const diffMs = dl - new Date();
+    const diffDays = Math.ceil(diffMs / 86400000);
+    const dv = document.getElementById('thesis-days');
+    dv.textContent = diffDays > 0 ? diffDays + 'd' : 'Abgabe!';
+    dv.className = 'metric-value' + (diffDays <= 14 ? ' urgent' : diffDays <= 30 ? '' : '');
+    document.getElementById('thesis-sub').textContent = new Date(deadline).toLocaleDateString('de-DE', {day:'numeric',month:'short',year:'numeric'});
+    if (startD) {
+      const s = new Date(startD), total = dl - s, elapsed = new Date() - s;
+      const p = Math.min(100, Math.max(0, Math.round(elapsed / total * 100)));
+      document.getElementById('thesis-bar').style.width = p + '%';
+    }
+  }
+}
+
+function renderTasks() {
+  const list = document.getElementById('task-list');
+  list.innerHTML = '';
+  const sorted = [...tasks.filter(t => !t.done), ...tasks.filter(t => t.done)];
+  sorted.forEach(t => {
+    const div = document.createElement('div');
+    div.className = 'task' + (t.done ? ' done' : '') + (!t.done && t.urgent ? ' urgent' : '');
+    div.onclick = (e) => { if (!e.target.classList.contains('task-del')) toggleTask(t.id); };
+
+    const catMap = { thesis: 'cat-thesis', bw: 'cat-bw', privat: 'cat-privat' };
+    const catLabel = { thesis: 'Thesis', bw: 'Bundeswehr', privat: 'Privat' };
+
+    div.innerHTML = `
+      <div class="check"><div class="check-mark"></div></div>
+      <span class="task-name">${t.name}</span>
+      <div class="task-right">
+        ${t.time ? `<span class="task-time">${t.time}</span>` : ''}
+        <span class="cat-tag ${catMap[t.cat] || 'cat-thesis'}">${catLabel[t.cat] || t.cat}</span>
+        <button class="task-del" onclick="deleteTask(${t.id})" title="Löschen">×</button>
+      </div>`;
+    list.appendChild(div);
+  });
+  renderMetrics();
+}
+
+function toggleTask(id) {
+  tasks = tasks.map(t => t.id === id ? {...t, done: !t.done} : t);
+  saveTasks(); renderTasks();
+}
+
+function deleteTask(id) {
+  tasks = tasks.filter(t => t.id !== id);
+  saveTasks(); renderTasks();
+}
+
+document.getElementById('add-btn').onclick = () => {
+  document.getElementById('add-form').classList.toggle('open');
+  if (document.getElementById('add-form').classList.contains('open'))
+    document.getElementById('new-name').focus();
+};
+
+document.getElementById('cancel-btn').onclick = () => {
+  document.getElementById('add-form').classList.remove('open');
+};
+
+document.getElementById('save-btn').onclick = saveTask;
+
+document.getElementById('new-name').addEventListener('keydown', e => {
+  if (e.key === 'Enter') saveTask();
+  if (e.key === 'Escape') document.getElementById('add-form').classList.remove('open');
+});
+
+function saveTask() {
+  const name = document.getElementById('new-name').value.trim();
+  if (!name) return;
+  tasks.push({
+    id: Date.now(),
+    name,
+    time: document.getElementById('new-time').value.trim(),
+    cat: document.getElementById('new-cat').value,
+    urgent: document.getElementById('new-urgent').checked,
+    done: false
+  });
+  saveTasks();
+  document.getElementById('new-name').value = '';
+  document.getElementById('new-time').value = '';
+  document.getElementById('new-urgent').checked = false;
+  document.getElementById('add-form').classList.remove('open');
+  renderTasks();
+}
+
+document.getElementById('deadline-btn').onclick = () => {
+  const v = document.getElementById('deadline-input').value;
+  if (!v) return;
+  deadline = v;
+  if (!startD) { startD = todayKey(); ls(LS_START, startD); }
+  ls(LS_DL, deadline);
+  document.getElementById('deadline-display').textContent = '✓ gespeichert';
+  setTimeout(() => document.getElementById('deadline-display').textContent = '', 2000);
+  renderMetrics();
+};
+
+if (deadline) document.getElementById('deadline-input').value = deadline;
+
+function tick() {
+  renderHeader();
+  renderDayBar();
+  renderMetrics();
+}
+
+renderWeek();
+renderTasks();
+tick();
+setInterval(tick, 30000);
+</script>
+</html>
