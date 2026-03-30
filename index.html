@@ -222,6 +222,20 @@ hr { border: none; border-top: 1px solid var(--b1); margin: 18px 0; }
 .cap-filter-tag { font-family: var(--mono); font-size: 10px; padding: 3px 9px; border-radius: 999px; background: var(--s2); color: var(--t3); border: 1px solid var(--b2); cursor: pointer; transition: all .12s; }
 .cap-filter-tag.active { background: var(--blue-bg); color: var(--blue); border-color: var(--blue-b); }
 
+/* WEEK NOTES */
+.week-notes-grid { display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: 8px; margin-bottom: 10px; }
+.week-notes-weekend { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px; }
+.day-note-card { background: var(--bg); border: 1px solid var(--b1); border-radius: var(--r); padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; min-height: 120px; }
+.day-note-card.today-card { border-color: var(--gold); background: var(--gold-bg); }
+.day-note-header { display: flex; align-items: baseline; justify-content: space-between; }
+.day-note-name { font-family: var(--mono); font-size: 10px; font-weight: 500; color: var(--t2); text-transform: uppercase; letter-spacing: .06em; }
+.day-note-card.today-card .day-note-name { color: var(--gold); }
+.day-note-date { font-family: var(--mono); font-size: 9px; color: var(--t3); }
+.day-note-ta { flex: 1; width: 100%; background: transparent; border: none; font-family: var(--font); font-size: 12px; color: var(--t1); resize: none; outline: none; min-height: 80px; line-height: 1.6; }
+.day-note-ta::placeholder { color: var(--t3); font-style: italic; }
+.day-note-card.today-card .day-note-ta::placeholder { color: var(--gold-b); }
+@media(max-width:640px){ .week-notes-grid { grid-template-columns: 1fr 1fr; } }
+
 /* MONTH GOALS */
 .goal-item { display: flex; align-items: center; gap: 10px; padding: 9px 13px; background: var(--bg); border: 1px solid var(--b1); border-radius: var(--r); margin-bottom: 6px; cursor: pointer; user-select: none; }
 .goal-item.done { opacity: .38; }
@@ -368,6 +382,13 @@ hr { border: none; border-top: 1px solid var(--b1); margin: 18px 0; }
     </div>
   </div>
   <div id="wgoal-list"></div>
+
+  <hr>
+  <div class="sec">
+    <span class="sec-title">Wochenplan — Notizen pro Tag</span>
+    <span style="font-family:var(--mono);font-size:10px;color:var(--t3);">wird automatisch gespeichert</span>
+  </div>
+  <div id="week-notes-grid"></div>
 </div>
 
 <!-- ══ CAPTURE ══ -->
@@ -561,6 +582,7 @@ document.querySelectorAll('.nav-tab').forEach(t=>{
     t.classList.add('active');
     document.getElementById('page-'+t.dataset.tab).classList.add('active');
     if(t.dataset.tab==='archiv') renderArchiv();
+    if(t.dataset.tab==='goals') renderWeekNotes();
   };
 });
 
@@ -951,6 +973,58 @@ function setDeadline(){
 }
 if(deadline) document.getElementById('dl-input').value=deadline;
 
+// ── Week notes ────────────────────────────────────────────────────────────
+function renderWeekNotes(){
+  const el=document.getElementById('week-notes-grid');
+  if(!el)return;
+  const now=new Date(), dow=now.getDay();
+  const monday=new Date(now); monday.setDate(now.getDate()-((dow+6)%7));
+  const days=[
+    {label:'Montag',short:'Mo',i:0},
+    {label:'Dienstag',short:'Di',i:1},
+    {label:'Mittwoch',short:'Mi',i:2},
+    {label:'Donnerstag',short:'Do',i:3},
+    {label:'Freitag',short:'Fr',i:4},
+  ];
+  const weekend=[
+    {label:'Samstag',short:'Sa',i:5},
+    {label:'Sonntag',short:'So',i:6},
+  ];
+
+  function dayCard(d){
+    const date=new Date(monday); date.setDate(monday.getDate()+d.i);
+    const dateStr=date.toISOString().slice(0,10);
+    const isToday=date.toDateString()===now.toDateString();
+    const noteKey='co2_daynote_'+dateStr;
+    const saved=ls(noteKey)||'';
+    const dateLabel=date.getDate()+'.'+(date.getMonth()+1)+'.';
+    return `<div class="day-note-card${isToday?' today-card':''}">
+      <div class="day-note-header">
+        <span class="day-note-name">${d.label}</span>
+        <span class="day-note-date">${dateLabel}</span>
+      </div>
+      <textarea class="day-note-ta" id="dn-${dateStr}" placeholder="${isToday?'Was steht heute an?':'Notizen…'}">${saved}</textarea>
+    </div>`;
+  }
+
+  el.innerHTML=`
+    <div class="week-notes-grid">${days.map(dayCard).join('')}</div>
+    <div class="week-notes-weekend" style="margin-top:8px;">${weekend.map(dayCard).join('')}</div>`;
+
+  // Auto-save on input
+  [...days,...weekend].forEach(d=>{
+    const date=new Date(monday); date.setDate(monday.getDate()+d.i);
+    const dateStr=date.toISOString().slice(0,10);
+    const ta=document.getElementById('dn-'+dateStr);
+    if(!ta)return;
+    let saveTimer;
+    ta.addEventListener('input',()=>{
+      clearTimeout(saveTimer);
+      saveTimer=setTimeout(()=>ls('co2_daynote_'+dateStr,ta.value),600);
+    });
+  });
+}
+
 // ── Archive ───────────────────────────────────────────────────────────────
 let archivFilter='all';
 
@@ -1084,7 +1158,7 @@ function importData(e){
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────
-renderWeek(); renderAllTasks(); renderGoals(); renderCapture(); renderContacts(); renderArchiv();
+renderWeek(); renderAllTasks(); renderGoals(); renderWeekNotes(); renderCapture(); renderContacts(); renderArchiv();
 renderClock(); renderMonth();
 setInterval(renderClock, 30000);
 </script>
